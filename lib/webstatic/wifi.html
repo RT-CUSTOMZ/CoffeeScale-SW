@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script>
+  //var host = 'http://10.42.0.223';
+  //var host = 'http://10.42.0.226';
+   var host = '';
+  // var host = 'http://192.168.4.1';
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var xmlHttp = new XMLHttpRequest();
+
+    xmlHttp.open('GET', host + '/wifi/ipinfo.cgi', true);
+    xmlHttp.onload = function () {
+      var jsonResponse = JSON.parse(xmlHttp.responseText);
+      var s = document.getElementById("ip");
+      s.textContent = jsonResponse.ip;
+    };
+    xmlHttp.send();
+  }, false);
+  document.addEventListener("DOMContentLoaded", function() {
+    var xmlHttp = new XMLHttpRequest();
+
+    xmlHttp.open('GET', host + '/wifi/connect.cgi', true);
+    xmlHttp.onload = function () {
+      var jsonResponse = JSON.parse(xmlHttp.responseText);
+      var s = document.getElementById("ssid");
+      s.textContent = jsonResponse.ssid;
+    };
+    xmlHttp.send();
+  }, false);
+  document.addEventListener("DOMContentLoaded", function() {
+    var xmlHttp = new XMLHttpRequest();
+
+    xmlHttp.open('GET', host + '/wifi/status.cgi', true);
+    xmlHttp.onload = function () {
+      var jsonResponse = JSON.parse(xmlHttp.responseText);
+      var s = document.getElementById("connection_status");
+      s.textContent = jsonResponse.status;
+    };
+    xmlHttp.send();
+  }, false);
+
+  // document.addEventListener("DOMContentLoaded", function() {
+  //   var xmlHttp = new XMLHttpRequest();
+  //
+  //   xmlHttp.open('GET', host + '/wifi/ap_list.cgi', true);
+  //   xmlHttp.onload = function () {
+  //     var jsonResponse = JSON.parse(xmlHttp.responseText);
+  //     var table = document.getElementById("ap_list");
+  //     jsonResponse.forEach(function(element, index, array) {
+  //       var row = table.insertRow();
+  //       var cell0 = row.insertCell(0);
+  //       var cell1 = row.insertCell(1);
+  //       var cell2 = row.insertCell(2);
+  //       cell0.innerHTML = element.ssid;
+  //       cell1.innerHTML = element.channel;
+  //       cell2.innerHTML = element.bssid;
+  //     });
+  //   };
+  //   xmlHttp.send();
+  // }, false);
+  function connectToAp() {
+    var xmlHttp = new XMLHttpRequest();
+
+    xmlHttp.open('PUT', host + '/wifi/connect.cgi', true);
+
+    var jsonResponse = new Object();
+    jsonResponse.ssid = document.querySelector('[name="ssid"]').value;
+    jsonResponse.password = document.querySelector('[name="password"]').value;
+
+    xmlHttp.send(JSON.stringify(jsonResponse));
+  }
+  function resetAp() {
+    var xmlHttp = new XMLHttpRequest();
+
+    xmlHttp.open('PUT', host + '/wifi/reset.cgi', true);
+
+    var jsonResponse = new Object();
+    xmlHttp.send(JSON.stringify(jsonResponse));
+  }
+  </script>
+
+
+</head>
+<body>
+  <div> Status: <span id="connection_status"></span> </div>
+  <div> Wifi ssid: <span id="ssid"></span> </div>
+  <div> Ip address: <span id="ip"></span> </div>
+  <!--     <div> Ap list: <span id="ap_list">Scanning...</span> </div> -->
+  <div> Connect to Ap:
+    <form name="form1" onsubmit="connectToAp()">
+      ssid:      <input name="ssid" type="text"><br>
+      password:  <input name="password" type="password"><br>
+      <input type="button" value="Connect to Ap" onclick="connectToAp()">
+      <input type="reset" value="Reset Ap" onclick="resetAp()">
+    </form>
+  </div>
+  <div>
+    <table id="ap_list">
+    </table>
+  </div>
+
+
+</body>
+</html>

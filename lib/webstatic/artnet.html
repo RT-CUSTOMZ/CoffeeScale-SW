@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script>
+  // var host = 'http://172.20.1.151';
+  // var host = 'http://172.20.1.193';
+   var host = '';
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var xmlHttp = new XMLHttpRequest();
+
+    xmlHttp.open('GET', host + '/artnet', true);
+    xmlHttp.onload = function () {
+      var jsonResponse = JSON.parse(xmlHttp.responseText);
+      document.getElementById("enabled").checked = jsonResponse.enabled;
+      document.getElementById("nodeName").value = jsonResponse.nodeName;
+      document.getElementById("universe").value = jsonResponse.universe;
+      document.getElementById("offset").value = jsonResponse.offset;
+    };
+    xmlHttp.send();
+  }, false);
+
+  function configureArtnet() {
+    var xmlHttp = new XMLHttpRequest();
+
+    xmlHttp.open('PUT', host + '/artnet', true);
+
+    var jsonResponse = new Object();
+    jsonResponse.nodeName = document.getElementById("nodeName").value;
+    jsonResponse.universe = parseInt(document.getElementById("universe").value);
+    jsonResponse.offset = parseInt(document.getElementById("offset").value);
+    jsonResponse.enable = document.getElementById("enabled").checked;
+    jsonResponse.persistent = document.getElementById("persistent").checked;
+
+    xmlHttp.send(JSON.stringify(jsonResponse));
+  }
+  </script>
+
+
+</head>
+<body>
+  <div> Configure Artnet:
+    <form name="form1" onsubmit="configureArtnet()">
+      Enable: <input type="checkbox" id="enabled"  name="enabled"><br>
+      Name:      <input id="nodeName" name="nodeName" type="text"><br>
+      Universe:  <input id="universe" name="universe" type="number" min="1" max="255"><br>
+      Offset:  <input id="offset" name="offset" type="number" min="0" max="508"><br>
+      Save persistent: <input type="checkbox" id="persistent" name="persistent"><br>
+      <input type="button" value="Save Artnet configuration" onclick="configureArtnet()">
+    </form>
+  </div>
+
+</body>
+</html>

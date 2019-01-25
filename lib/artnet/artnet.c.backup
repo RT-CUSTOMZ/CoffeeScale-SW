@@ -1,0 +1,124 @@
+/******************************************************************************
+ * Copyright 2013-2014 Espressif Systems (Wuxi)
+ *
+ * FileName: user_devicefind.c
+ *
+ * Description: Find your hardware's information while working any mode.
+ *
+ * Modification history:
+ *     2014/3/12, v1.0 create this file.
+*******************************************************************************/
+#include "ets_sys.h"
+#include "os_type.h"
+#include "osapi.h"
+#include "mem.h"
+#include "user_interface.h"
+
+#include "espconn.h"
+
+LOCAL struct espconn ptrespconn;
+
+
+#include "artnet/artnet.h"
+#define AnsiString char //quick fix
+#include "Art-Net.h"
+
+typedef struct S_ArtHeader {
+	uint8_t id[8];
+	uint16_t opCode;
+} T_ArtHeader;
+
+
+static T_ArtPollReply pollReply;
+
+static ARTNET_callbacks* artnet_callbacks;
+
+static void handlePollDatagram(ARTNET_callbacks* callbacks, const void* daten, uint16_t len)
+{
+	const T_ArtPoll* packet = (const T_ArtPoll*)daten;
+
+	if(len < sizeof(T_ArtPoll))
+		return;
+
+	struct ip_info info;
+	wifi_get_ip_info(STATION_IF,&info);
+	memcpy(pollReply.BoxAddr.IP,&(info.ip),4);
+
+	espconn_sent(&ptrespconn,  (uint8*)&pollReply, sizeof (pollReply));
+}
+
+void Artnet_Init(void)
+{
+  memset(&pollReply,0,sizeof(pollReply));
+	strcpy((char*)pollReply.ID,"Art-Net");
+	pollReply.OpCode = OpPollReply;
+	pollReply.BoxAddr.Port = DefaultPort;
+	strcpy((char*)pollReply.ShortName,"ESP8266 Art-Net");
+	pollReply.NumPortsLo = 1;
+	pollReply.PortTypes[0] = (1 << 7);
+	pollReply.SubSwitch = 0xA;
+	wifi_get_macaddr(STATION_IF,pollReply.Mac);
+}
+
+static void handleDmxDatagram(ARTNET_callbacks* callbacks, const void* daten, uint16_t len)
+{
+	const T_ArtDmx* packet = (const T_ArtDmx*)daten;
+
+	if(len < (sizeof(T_ArtDmx) - MaxDataLength) )
+		return;
+
+	uint16_t dmxLen = len - (sizeof(T_ArtDmx) - MaxDataLength);
+	if(dmxLen < 3)
+		return;
+
+	callbacks->dmxData(packet->Data,  dmxLen);
+}
+/*---------------------------------------------------------------------------*/
+
+
+/******************************************************************************
+ * FunctionName : user_devicefind_recv
+ * Description  : Processing the received data from the host
+ * Parameters   : arg -- Additional argument to pass to the callback function
+ *                pusrdata -- The received data (or NULL when the connection has been closed!)
+ *                length -- The length of received data
+ * Returns      : none
+*******************************************************************************/
+LOCAL void ICACHE_FLASH_ATTR
+artnet_recv(void *arg, char *pusrdata, unsigned short length)
+{
+	const T_ArtHeader* header = (const T_ArtHeader*) pusrdata;
+	//ARTNET_callbacks* callbacks = (ARTNET_callbacks*) arg;
+	ARTNET_callbacks* callbacks = artnet_callbacks;
+
+	switch(header->opCode) {
+	case OpDmx:
+		handleDmxDatagram(callbacks, pusrdata, length);
+		break;
+	case OpPoll:
+		handlePollDatagram(callbacks, pusrdata, length);
+		break;
+	}
+}
+
+/******************************************************************************
+ * FunctionName : user_devicefind_init
+ * Description  : the espconn struct parame init
+ * Parameters   : none
+ * Returns      : none
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+ARTNET_init(ARTNET_callbacks* callbacks)
+{
+	Artnet_Init();
+
+	artnet_callbacks = callbacks;
+
+    ptrespconn.type = ESPCONN_UDP;
+    ptrespconn.proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
+    ptrespconn.proto.udp->local_port = 6454;
+    //ptrespconn.reverse = (void*) callbacks;
+    //ptrespconn.proto.udp->remote_port = 6454;
+    espconn_regist_recvcb(&ptrespconn, artnet_recv);
+    espconn_create(&ptrespconn);
+}

@@ -1,0 +1,43 @@
+%{
+#include <stdint.h>
+#include "http_server.h"
+#include "http_path_lookup.h"
+#include "static_web_files.h"
+#include "json_state.h"
+
+void transmit_wifi_connect(HttpReqeuest* httpReqeuest, const char *at, size_t length);
+void transmit_wifi_reset(HttpReqeuest* httpReqeuest, const char *at, size_t length);
+void transmit_wifi_status(HttpReqeuest* httpReqeuest, const char *at, size_t length);
+void transmit_wifi_ipInfo(HttpReqeuest* httpReqeuest, const char *at, size_t length);
+void http_wifi_aplist(HttpReqeuest* httpReqeuest, const char *at, size_t length);
+
+
+void transmit_json(HttpReqeuest* httpReqeuest, const char *at, size_t length);
+extern json_state_t artnet_json_state;
+extern json_state_t board_json_state;
+extern json_state_t ip_json_state;
+extern json_state_t wifi_json_state;
+extern json_state_t cube_cmd_json_state;
+
+extern HttpFile fileIndexHtml;
+extern HttpFile fileArtnetHtml;
+void transmit_file(HttpReqeuest* httpReqeuest, const char *at, size_t length);
+
+%}
+%includes
+%struct-type
+%language=C
+%compare-strncmp
+%readonly-tables
+%global-table
+%switch=1
+%define slot-name path
+%define lookup-function-name http_path_lookup
+struct HttpPathLookup
+%%
+/, transmit_file, (void*) &fileIndexHtml
+/index.html, transmit_file, (void*) &fileIndexHtml
+/board, transmit_json, &board_json_state
+/ip, transmit_json, &ip_json_state
+/wifi, transmit_json, &wifi_json_state
+/wifi/connect.cgi, transmit_json, &wifi_json_state

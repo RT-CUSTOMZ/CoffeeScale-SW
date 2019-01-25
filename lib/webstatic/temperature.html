@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <style>
+  .sp-picker-container {
+    width: 400px;
+  }
+  </style>
+  <script>
+  // var host = 'http://192.168.120.116';
+  var host = '';
+  // var host = 'http://192.168.4.1';
+ </script>
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/smoothie/1.27.0/smoothie.min.js"></script>
+  <script type="text/javascript">
+
+    // Randomly add a data point every 500ms
+    var temperaturePlot = new TimeSeries();
+    window.setInterval( function() {
+      var xmlHttp = new XMLHttpRequest();
+
+      xmlHttp.open('GET', host + '/temperature', true);
+      xmlHttp.onload = function () {
+        var jsonResponse = JSON.parse(xmlHttp.responseText);
+        temperaturePlot.append(new Date().getTime(), jsonResponse.temperature);
+        var s = document.getElementById("temperature");
+        s.textContent = jsonResponse.temperature;
+      };
+      xmlHttp.send();
+    },1000);
+
+
+    function createTimeline() {
+      var chart = new SmoothieChart({
+        millisPerPixel:100,
+        grid:{
+          sharpLines:true,
+          verticalSections:19,
+          millisPerLine:10000
+        },
+        labels:{
+          disabled:true
+        },
+        maxValue:40,
+        minValue:20,
+        timestampFormatter:SmoothieChart.timeFormatter
+      });
+      chart.addTimeSeries(temperaturePlot, {lineWidth:2,strokeStyle:'#00ff00'});
+      chart.streamTo(document.getElementById("chart"), 500);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        createTimeline();
+    }, false);
+  </script>
+</head>
+<body>
+  <div> Temperature: <span id="temperature"></span> </div>
+  <canvas id="chart" width="700" height="400"></canvas>
+</body>
+</html>
