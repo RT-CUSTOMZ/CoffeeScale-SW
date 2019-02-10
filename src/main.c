@@ -61,7 +61,7 @@ static void new_value_callback(int value, void *obj) {
 	os_printf("HX711 value: %d\n", (value - 7200000) / 256);
 
 	static char *json_buff[100];
-	os_sprintf(json_buff, "{ rawValue: %d }", value);
+	os_sprintf(json_buff, "{ \"rawValue\": %d }", value);
 	MQTT_publish(obj, "value", json_buff, strlen(json_buff) );
 }
 
